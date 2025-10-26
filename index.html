@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Filter Bubbles Analysis</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e2e8f0 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .content-section {
+            padding: 25px 30px;
+            display: flex;
+            gap: 30px;
+            position: relative;
+        }
+        
+        .english-text {
+            flex: 1;
+            padding: 20px;
+            background-color: #fdfdfd;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: 600px;
+            overflow-y: auto;
+        }
+        
+        .analysis-panel {
+            flex: 1;
+            padding: 20px;
+            background-color: #f0f7ff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            height: 600px;
+            overflow-y: auto;
+            position: sticky;
+            top: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .paragraph {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .paragraph:hover {
+            background-color: #e8f4fc;
+            border-left-color: #3498db;
+            transform: translateX(5px);
+        }
+        
+        .paragraph.active {
+            background-color: #d4edff;
+            border-left-color: #2980b9;
+        }
+        
+        .paragraph-number {
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            background-color: #3498db;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 25px;
+            margin-right: 10px;
+            font-size: 0.8em;
+        }
+        
+        .translation-box {
+            margin-top: 15px;
+            padding: 12px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            border-left: 3px solid #e74c3c;
+            display: none;
+        }
+        
+        .analysis-content {
+            display: none;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .analysis-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .analysis-item {
+            margin-bottom: 15px;
+        }
+        
+        .analysis-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .analysis-title::before {
+            content: "•";
+            color: #3498db;
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        
+        .activities-section {
+            padding: 25px 30px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .activity {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .activity-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .activity-title::before {
+            content: "•";
+            color: #2ecc71;
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+        
+        .scenario-box {
+            background-color: #f0f7ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .option {
+            padding: 12px;
+            background-color: #f0f0f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .option:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+        
+        .option.selected {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .activity-button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .activity-button:hover {
+            background-color: #2980b9;
+        }
+        
+        .feedback {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .positive {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .negative {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .social-media-feed {
+            width: 100%;
+            height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 15px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .feed-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .feed-item:hover {
+            transform: translateX(5px);
+        }
+        
+        .feed-item.similar {
+            border-left: 4px solid #3498db;
+        }
+        
+        .feed-item.diverse {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .bubble-strength-meter {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .bubble-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c);
+            border-radius: 10px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .reflection-box {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin: 15px 0;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .personal-action-plan {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .action-card {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .action-card.selected {
+            border-color: #2ecc71;
+            background-color: #f0fff4;
+        }
+        
+        .action-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        /* MCQ Section Styles */
+        .mcq-section {
+            padding: 25px 30px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #eaeaea;
+        }
+        
+        .mcq-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        
+        .mcq-question {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        
+        .mcq-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .mcq-option {
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mcq-option:hover {
+            background-color: #e9ecef;
+            border-color: #3498db;
+        }
+        
+        .mcq-option.selected {
+            background-color: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        
+        .mcq-option.correct {
+            background-color: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        
+        .mcq-option.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        
+        .mcq-feedback {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .mcq-submit {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+        
+        .mcq-submit:hover {
+            background-color: #2980b9;
+        }
+        
+        .mcq-score {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-top: 20px;
+            color: #2c3e50;
+        }
+        
+        @media (max-width: 768px) {
+            .content-section {
+                flex-direction: column;
+            }
+            
+            .analysis-panel {
+                position: relative;
+                top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Breaking Your Filters</h1>
+            <p class="subtitle">Interactive Analysis of Filter Bubbles</p>
+        </header>
+        
+        <section class="content-section">
+            <div class="english-text" id="english-text">
+                <h2>English Text</h2>
+                
+                <div class="paragraph" data-id="1">
+                    <span class="paragraph-number">1</span>
+                    <p>Anyone who uses the internet has experienced the filtering of information.</p>
+                    <div class="translation-box">
+                        <strong>Chinese Translation:</strong> 任何使用互联网的人都经历过信息过滤。
+                    </div>
+                </div>
+                
+                <div class="paragraph" data-id="2">
+                    <span class="paragraph-number">2</span>
+                    <p>To understand how filter bubbles are created, it is important to understand how algorithms work. Algorithms are large, complex computer codes that decide how relevant particular information may end up being to each individual. The overall goal, however, is to learn who we are and filter out information based on what we click on and how long we spend looking at particular content. This can come into effect with the advertisements that pop up on our feeds and search results, and the order in which content is displayed.</p>
+                    <div class="translation-box">
+                        <strong>Chinese Translation:</strong> 要理解信息茧房是如何形成的，了解算法的工作原理非常重要。算法是庞大而复杂的计算机代码，它们决定特定信息最终对每个人的相关程度。然而，其总体目标是了解我们是谁，并根据我们点击的内容以及我们查看特定内容的时间来过滤信息。这会影响我们信息流和搜索结果中弹出的广告，以及内容显示的顺序。
+                    </div>
+                </div>
+                
+                <div class="paragraph" data-id="3">
+                    <span class="paragraph-number">3</span>
+                    <p>Despite algorithms' role in the creation of filter bubbles, however, they do not explain everything. To a certain degree, internet users inevitably become wrapped in filter bubbles because these restraints on our exposure to diversified information feed on our human weaknesses. Homophily is the human behavior in which individuals tend to form bonds with others who share their beliefs. This tendency drives us to separate ourselves from varying ideas by surrounding ourselves with online friends who share our opinions, and by subscribing to the types of content producers that support our pre-existing beliefs.</p>
+                    <div class="translation-box">
+                        <strong>Chinese Translation:</strong> 然而，尽管算法在创建信息茧房中发挥了作用，但它们并不能解释一切。在某种程度上，互联网用户不可避免地陷入信息茧房，因为这些对我们接触多元化信息的制约利用了人性的弱点。同质偏好是一种人类行为，即个体倾向于与分享其信仰的人建立联系。这种倾向驱使我们通过围绕自己与分享我们观点的在线朋友相处，并订阅支持我们既有信念的内容生产者类型，从而将自己与不同的观点隔离开来。
+                    </div>
+                </div>
+                
+                <div class="paragraph" data-id="4">
+                    <span class="paragraph-number">4</span>
+                    <p>Negative effects occur when individuals are confined to their personal filter bubbles. Filter bubbles create an information barrier around people that prevents them from seeing opposing viewpoints, making them believe that "our narrow self-interest is all that exists," Pariser said. Because of this, people can become polarized to their side of a particular argument.</p>
+                    <div class="translation-box">
+                        <strong>Chinese Translation:</strong> 当个人困于自己的信息茧房时，负面效应就会出现。帕里泽说，信息茧房在人们周围制造了一个信息屏障，阻止他们看到反对观点，使他们相信"我们狭隘的自身利益就是全部存在"。正因为如此，人们可能会在特定争论中变得分化，只站在自己的一方。
+                    </div>
+                </div>
+                
+                <div class="paragraph" data-id="5">
+                    <span class="paragraph-number">5</span>
+                    <p>With this being said, we can all play an important role in the process of breaking free of filter bubbles. By simply turning off customization features and targeted ads on websites, we can limit the effects that algorithms have on our content. Nonetheless, the key to breaking your filters lies in having a hunger for truth.</p>
+                    <div class="translation-box">
+                        <strong>Chinese Translation:</strong> 尽管如此，我们都可以在摆脱信息茧房的过程中发挥重要作用。通过简单地关闭网站上的个性化功能和定向广告，我们可以限制算法对我们内容的影响。然而，打破过滤的关键在于对真理的渴望。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="analysis-panel" id="analysis-panel">
+                <h2>Analysis Panel</h2>
+                <p id="default-message">Hover over any paragraph to see its analysis here.</p>
+                
+                <div id="analysis-1" class="analysis-content">
+                    <div class="analysis-item">
+                        <div class="analysis-title">Main Idea</div>
+                        <p>Introduction to the universal experience of information filtering online.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Writing Technique</div>
+                        <p>Uses a universal statement to create immediate relevance with the reader.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Author's Intention</div>
+                        <p>To establish common ground and introduce the topic in an accessible way.</p>
+                    </div>
+                </div>
+                
+                <div id="analysis-2" class="analysis-content">
+                    <div class="analysis-item">
+                        <div class="analysis-title">Main Idea</div>
+                        <p>Explanation of how algorithms create filter bubbles by personalizing content.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Writing Technique</div>
+                        <p>Defines technical concepts in accessible language and provides concrete examples.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Author's Intention</div>
+                        <p>To demystify algorithms and show how they actively shape our online experience.</p>
+                    </div>
+                </div>
+                
+                <div id="analysis-3" class="analysis-content">
+                    <div class="analysis-item">
+                        <div class="analysis-title">Main Idea</div>
+                        <p>Human behavioral tendencies (homophily) also contribute to filter bubbles.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Writing Technique</div>
+                        <p>Introduces a psychological concept to explain human complicity in filter bubble formation.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Author's Intention</div>
+                        <p>To show that filter bubbles aren't just technological but also psychological phenomena.</p>
+                    </div>
+                </div>
+                
+                <div id="analysis-4" class="analysis-content">
+                    <div class="analysis-item">
+                        <div class="analysis-title">Main Idea</div>
+                        <p>Negative consequences of filter bubbles include polarization and limited perspectives.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Writing Technique</div>
+                        <p>Uses a direct quote from an expert to add authority and emphasize the societal impact.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Author's Intention</div>
+                        <p>To highlight the real-world consequences of filter bubbles on society and individuals.</p>
+                    </div>
+                </div>
+                
+                <div id="analysis-5" class="analysis-content">
+                    <div class="analysis-item">
+                        <div class="analysis-title">Main Idea</div>
+                        <p>Solutions for escaping filter bubbles include technical adjustments and intellectual curiosity.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Writing Technique</div>
+                        <p>Offers practical solutions while ending with a motivational call to action.</p>
+                    </div>
+                    <div class="analysis-item">
+                        <div class="analysis-title">Author's Intention</div>
+                        <p>To empower readers with actionable steps and inspire a mindset change.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="mcq-section">
+            <h2>Reading Comprehension Questions</h2>
+            
+            <div class="mcq-container" id="mcq1">
+                <div class="mcq-question">1. What can be inferred about algorithms from the passage?</div>
+                <div class="mcq-options">
+                    <div class="mcq-option" data-correct="true">They personalize content automatically</div>
+                    <div class="mcq-option" data-correct="false">They eliminate all human bias</div>
+                    <div class="mcq-option" data-correct="false">They prioritize factual accuracy</div>
+                    <div class="mcq-option" data-correct="false">They increase content diversity</div>
+                </div>
+                <div class="mcq-feedback"></div>
+            </div>
+            
+            <div class="mcq-container" id="mcq2">
+                <div class="mcq-question">2. Based on context, "homophily" refers to:</div>
+                <div class="mcq-options">
+                    <div class="mcq-option" data-correct="false">Fear of technology</div>
+                    <div class="mcq-option" data-correct="true">Bonding with similar people</div>
+                    <div class="mcq-option" data-correct="false">Algorithm complexity</div>
+                    <div class="mcq-option" data-correct="false">Information filtering</div>
+                </div>
+                <div class="mcq-feedback"></div>
+            </div>
+            
+            <div class="mcq-container" id="mcq3">
+                <div class="mcq-question">3. The main purpose of this passage is to:</div>
+                <div class="mcq-options">
+                    <div class="mcq-option" data-correct="false">Promote specific websites</div>
+                    <div class="mcq-option" data-correct="false">Criticize social media</div>
+                    <div class="mcq-option" data-correct="true">Explain and solve filter bubbles</div>
+                    <div class="mcq-option" data-correct="false">Defend algorithmic filtering</div>
+                </div>
+                <div class="mcq-feedback"></div>
+            </div>
+            
+            <div class="mcq-container" id="mcq4">
+                <div class="mcq-question">4. The author's attitude toward filter bubbles is:</div>
+                <div class="mcq-options">
+                    <div class="mcq-option" data-correct="false">Supportive and approving</div>
+                    <div class="mcq-option" data-correct="false">Neutral and indifferent</div>
+                    <div class="mcq-option" data-correct="true">Concerned but hopeful</div>
+                    <div class="mcq-option" data-correct="false">Angry and dismissive</div>
+                </div>
+                <div class="mcq-feedback"></div>
+            </div>
+            
+            <button class="mcq-submit" onclick="checkAllMCQs()">Check All Answers</button>
+            <div class="mcq-score" id="mcq-score"></div>
+        </section>
+        
+        <section class="activities-section">
+            <h2>Interactive Activities: Understanding Filter Bubbles in Your Life</h2>
+            
+            <div class="activity" id="activity1">
+                <div class="activity-title">Activity 1: Map Your Personal Information Diet</div>
+                <p>Think about your typical day online. Which platforms do you use most? What types of content do you usually see?</p>
+                
+                <div class="scenario-box">
+                    <strong>Your Daily Digital Routine:</strong> Imagine your typical social media scrolling session. What kind of posts do you like, share, or spend time reading?
+                </div>
+                
+                <div class="options-container">
+                    <div class="option" data-type="similar">Mostly content from friends with similar views</div>
+                    <div class="option" data-type="similar">News sources that align with my opinions</div>
+                    <div class="option" data-type="similar">Entertainment that matches my tastes</div>
+                    <div class="option" data-type="diverse">Content from people with different perspectives</div>
+                    <div class="option" data-type="diverse">News from various political viewpoints</div>
+                    <div class="option" data-type="diverse">Different types of entertainment genres</div>
+                </div>
+                
+                <div class="bubble-strength-meter">
+                    <div class="bubble-fill" id="bubble-meter"></div>
+                </div>
+                <p>Your current filter bubble strength: <span id="bubble-strength-text">Low</span></p>
+                
+                <button class="activity-button" onclick="calculateBubbleStrength()">Calculate My Bubble Strength</button>
+                <div class="feedback" id="bubble-feedback"></div>
+            </div>
+            
+            <div class="activity">
+                <div class="activity-title">Activity 2: Social Media Feed Simulation</div>
+                <p>Watch how your interactions shape what appears in your feed. Click on posts you would typically engage with.</p>
+                
+                <div class="social-media-feed" id="social-feed">
+                    <div class="feed-item similar" data-type="similar">
+                        <strong>Friend's Post:</strong> "I completely agree with this political viewpoint! This policy is exactly what we need."
+                    </div>
+                    <div class="feed-item diverse" data-type="diverse">
+                        <strong>News Article:</strong> "Alternative perspective: Here's why some experts disagree with the popular opinion"
+                    </div>
+                    <div class="feed-item similar" data-type="similar">
+                        <strong>Entertainment:</strong> "New movie in your favorite genre just released - perfect for you!"
+                    </div>
+                    <div class="feed-item diverse" data-type="diverse">
+                        <strong>Educational:</strong> "Understanding different cultural perspectives on this global issue"
+                    </div>
+                    <div class="feed-item similar" data-type="similar">
+                        <strong>Friend's Post:</strong> "This meme perfectly represents our shared sense of humor!"
+                    </div>
+                    <div class="feed-item diverse" data-type="diverse">
+                        <strong>Discussion:</strong> "People with different life experiences share their views"
+                    </div>
+                </div>
+                
+                <div class="scenario-box">
+                    <strong>What happens next:</strong> Based on your clicks, the algorithm will show you more of what you engage with.
+                </div>
+                
+                <button class="activity-button" onclick="simulateAlgorithm()">See How My Clicks Affect My Feed</button>
+                <div class="feedback" id="feed-feedback"></div>
+            </div>
+            
+            <div class="activity">
+                <div class="activity-title">Activity 3: Real-Life Consequences Reflection</div>
+                <p>Think about how filter bubbles have affected your understanding of real-world issues.</p>
+                
+                <div class="scenario-box">
+                    <strong>Personal Reflection:</strong> Can you recall a time when you were surprised to learn something that contradicted what you usually see online? Or when you found it hard to understand why someone had a completely different viewpoint on an important issue?
+                </div>
+                
+                <textarea class="reflection-box" placeholder="Describe your experience here... (e.g., 'I was surprised when I learned that...' or 'I didn't understand why people thought... until I...')" id="reflection-text"></textarea>
+                
+                <button class="activity-button" onclick="submitReflection()">Submit Reflection</button>
+                <div class="feedback" id="reflection-feedback"></div>
+            </div>
+            
+            <div class="activity">
+                <div class="activity-title">Activity 4: Create Your Bubble-Breaking Action Plan</div>
+                <p>Select practical steps you can take to diversify your information sources and break free from filter bubbles.</p>
+                
+                <div class="personal-action-plan">
+                    <div class="action-card" data-action="diverse-sources">
+                        <div class="action-icon">📰</div>
+                        <h3>Follow Diverse News Sources</h3>
+                        <p>Add 2-3 news outlets with different perspectives to your feeds</p>
+                    </div>
+                    <div class="action-card" data-action="different-voices">
+                        <div class="action-icon">👥</div>
+                        <h3>Follow Different Voices</h3>
+                        <p>Intentionally follow people with different backgrounds and opinions</p>
+                    </div>
+                    <div class="action-card" data-action="critical-thinking">
+                        <div class="action-icon">🤔</div>
+                        <h3>Practice Critical Thinking</h3>
+                        <p>Question why you agree/disagree with content before engaging</p>
+                    </div>
+                    <div class="action-card" data-action="algorithm-settings">
+                        <div class="action-icon">⚙️</div>
+                        <h3>Adjust Algorithm Settings</h3>
+                        <p>Turn off personalized recommendations where possible</p>
+                    </div>
+                    <div class="action-card" data-action="offline-discussions">
+                        <div class="action-icon">💬</div>
+                        <h3>Have Offline Discussions</h3>
+                        <p>Talk with people who have different viewpoints in real life</p>
+                    </div>
+                    <div class="action-card" data-action="media-literacy">
+                        <div class="action-icon">🔍</div>
+                        <h3>Improve Media Literacy</h3>
+                        <p>Learn to identify biased reporting and verify information</p>
+                    </div>
+                </div>
+                
+                <button class="activity-button" onclick="generateActionPlan()">Generate My Action Plan</button>
+                <div class="feedback" id="actionplan-feedback"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Paragraph hover functionality
+        document.querySelectorAll('.paragraph').forEach(paragraph => {
+            paragraph.addEventListener('mouseenter', function() {
+                // Show translation
+                const translation = this.querySelector('.translation-box');
+                translation.style.display = 'block';
+                
+                // Show analysis
+                const paragraphId = this.getAttribute('data-id');
+                document.querySelectorAll('.analysis-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(`analysis-${paragraphId}`).classList.add('active');
+                document.getElementById('default-message').style.display = 'none';
+                
+                // Highlight active paragraph
+                document.querySelectorAll('.paragraph').forEach(p => {
+                    p.classList.remove('active');
+                });
+                this.classList.add('active');
+                
+                // Scroll analysis panel to show the current analysis
+                const analysisContent = document.getElementById(`analysis-${paragraphId}`);
+                const analysisPanel = document.getElementById('analysis-panel');
+                const contentTop = analysisContent.offsetTop - analysisPanel.offsetTop;
+                analysisPanel.scrollTo({
+                    top: contentTop - 20,
+                    behavior: 'smooth'
+                });
+            });
+            
+            paragraph.addEventListener('mouseleave', function() {
+                // Hide translation
+                const translation = this.querySelector('.translation-box');
+                translation.style.display = 'none';
+                
+                // Remove active class
+                this.classList.remove('active');
+            });
+        });
+        
+        // MCQ functionality
+        document.querySelectorAll('.mcq-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selected class from all options in this question
+                const question = this.closest('.mcq-container');
+                question.querySelectorAll('.mcq-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                
+                // Add selected class to clicked option
+                this.classList.add('selected');
+            });
+        });
+        
+        function checkAllMCQs() {
+            let score = 0;
+            const totalQuestions = 4;
+            
+            // Check each question
+            for (let i = 1; i <= totalQuestions; i++) {
+                const question = document.getElementById(`mcq${i}`);
+                const selectedOption = question.querySelector('.mcq-option.selected');
+                const feedback = question.querySelector('.mcq-feedback');
+                
+                if (!selectedOption) {
+                    feedback.textContent = "Please select an answer.";
+                    feedback.style.display = 'block';
+                    feedback.className = 'mcq-feedback';
+                    continue;
+                }
+                
+                // Remove previous correct/incorrect classes
+                question.querySelectorAll('.mcq-option').forEach(opt => {
+                    opt.classList.remove('correct', 'incorrect');
+                });
+                
+                // Check if correct
+                if (selectedOption.getAttribute('data-correct') === 'true') {
+                    selectedOption.classList.add('correct');
+                    feedback.textContent = getCorrectFeedback(i);
+                    feedback.className = 'mcq-feedback positive';
+                    score++;
+                } else {
+                    selectedOption.classList.add('incorrect');
+                    // Show correct answer
+                    const correctOption = question.querySelector('.mcq-option[data-correct="true"]');
+                    correctOption.classList.add('correct');
+                    feedback.textContent = getIncorrectFeedback(i);
+                    feedback.className = 'mcq-feedback negative';
+                }
+                
+                feedback.style.display = 'block';
+            }
+            
+            // Display score
+            const scoreElement = document.getElementById('mcq-score');
+            scoreElement.textContent = `Score: ${score}/${totalQuestions}`;
+            
+            // Add motivational message based on score
+            if (score === totalQuestions) {
+                scoreElement.innerHTML += '<br>Excellent! You have a strong understanding of the passage.';
+                scoreElement.style.color = '#2ecc71';
+            } else if (score >= totalQuestions/2) {
+                scoreElement.innerHTML += '<br>Good job! Review the incorrect answers to improve.';
+                scoreElement.style.color = '#f39c12';
+            } else {
+                scoreElement.innerHTML += '<br>Review the passage and try again.';
+                scoreElement.style.color = '#e74c3c';
+            }
+        }
+        
+        function getCorrectFeedback(questionNum) {
+            const feedbacks = {
+                1: "Correct! The passage explains algorithms personalize content based on user behavior.",
+                2: "Correct! Homophily means bonding with people who share similar beliefs.",
+                3: "Correct! The passage explains filter bubbles and offers solutions.",
+                4: "Correct! The author shows concern but offers hopeful solutions."
+            };
+            return feedbacks[questionNum];
+        }
+        
+        function getIncorrectFeedback(questionNum) {
+            const feedbacks = {
+                1: "Incorrect. The passage states algorithms personalize content, not prioritize factual accuracy, eliminate bias or increase diversity.",
+                2: "Incorrect. Homophily specifically refers to bonding with similar people, not technology fear or filtering.",
+                3: "Incorrect. The passage explains filter bubbles and solutions, not promoting websites or defending algorithms.",
+                4: "Incorrect. The author shows concern about filter bubbles but offers solutions, indicating hope."
+            };
+            return feedbacks[questionNum];
+        }
+        
+        // Activity 1: Personal Information Diet - FIXED
+        document.querySelectorAll('#activity1 .option').forEach(option => {
+            option.addEventListener('click', function() {
+                this.classList.toggle('selected');
+            });
+        });
+        
+        function calculateBubbleStrength() {
+            const selectedOptions = document.querySelectorAll('#activity1 .option.selected');
+            let similarCount = 0;
+            let totalSelected = selectedOptions.length;
+            
+            selectedOptions.forEach(option => {
+                if (option.getAttribute('data-type') === 'similar') {
+                    similarCount++;
+                }
+            });
+            
+            const bubbleStrength = totalSelected > 0 ? (similarCount / totalSelected) * 100 : 0;
+            document.getElementById('bubble-meter').style.width = `${bubbleStrength}%`;
+            
+            let strengthText, feedbackText;
+            if (bubbleStrength < 30) {
+                strengthText = 'Low';
+                feedbackText = 'Great! You have a relatively diverse information diet. Keep seeking different perspectives to maintain this healthy balance.';
+            } else if (bubbleStrength < 70) {
+                strengthText = 'Medium';
+                feedbackText = 'You have some diversity in your information sources, but there is room for improvement. Try adding more varied perspectives to prevent your bubble from strengthening.';
+            } else {
+                strengthText = 'High';
+                feedbackText = 'Your information diet shows signs of a strong filter bubble. This can limit your understanding of complex issues. Consider intentionally seeking out different viewpoints to broaden your perspective.';
+            }
+            
+            document.getElementById('bubble-strength-text').textContent = strengthText;
+            const feedback = document.getElementById('bubble-feedback');
+            feedback.textContent = feedbackText;
+            feedback.className = 'feedback ' + (bubbleStrength > 70 ? 'negative' : (bubbleStrength < 30 ? 'positive' : ''));
+            feedback.style.display = 'block';
+        }
+        
+        // Activity 2: Social Media Feed Simulation
+        document.querySelectorAll('.feed-item').forEach(item => {
+            item.addEventListener('click', function() {
+                this.style.backgroundColor = this.classList.contains('similar') ? '#e8f4fc' : '#fce8e8';
+            });
+        });
+        
+        function simulateAlgorithm() {
+            const clickedItems = document.querySelectorAll('.feed-item[style*="background-color"]');
+            let similarClicks = 0;
+            let diverseClicks = 0;
+            
+            clickedItems.forEach(item => {
+                if (item.classList.contains('similar')) {
+                    similarClicks++;
+                } else {
+                    diverseClicks++;
+                }
+            });
+            
+            const feedback = document.getElementById('feed-feedback');
+            
+            if (clickedItems.length === 0) {
+                feedback.textContent = "You didn't click on any posts. In real life, algorithms learn from your engagement to show you more of what you interact with.";
+                feedback.className = 'feedback';
+            } else if (similarClicks > diverseClicks) {
+                feedback.textContent = `Based on your ${similarClicks} clicks on similar content, the algorithm would show you more posts that reinforce your existing views. This is how filter bubbles strengthen over time! Try clicking on some diverse content to see how it changes the algorithm's behavior.`;
+                feedback.className = 'feedback negative';
+            } else if (diverseClicks > similarClicks) {
+                feedback.textContent = `By clicking on ${diverseClicks} diverse posts, you're telling the algorithm you want varied perspectives. This helps prevent filter bubbles from forming! The algorithm will now show you more content that challenges your thinking.`;
+                feedback.className = 'feedback positive';
+            } else {
+                feedback.textContent = `You engaged with both similar and diverse content. This balanced approach helps maintain a healthy information diet and prevents extreme filter bubbles. The algorithm will continue showing you a mix of perspectives.`;
+                feedback.className = 'feedback positive';
+            }
+            
+            feedback.style.display = 'block';
+        }
+        
+        // Activity 3: Personal Reflection
+        function submitReflection() {
+            const reflectionText = document.getElementById('reflection-text').value;
+            const feedback = document.getElementById('reflection-feedback');
+            
+            if (reflectionText.length < 10) {
+                feedback.textContent = "Please share more about your experience to complete this reflection. Think about specific moments when you noticed your perspective might have been limited by the information you typically consume.";
+                feedback.className = 'feedback';
+            } else {
+                feedback.textContent = "Thank you for your reflection. Recognizing these moments is the first step toward breaking free from filter bubbles. Remember that everyone experiences them - what matters is developing awareness and taking action to seek diverse perspectives.";
+                feedback.className = 'feedback positive';
+            }
+            
+            feedback.style.display = 'block';
+        }
+        
+        // Activity 4: Action Plan - IMPROVED FEEDBACK
+        document.querySelectorAll('.action-card').forEach(card => {
+            card.addEventListener('click', function() {
+                this.classList.toggle('selected');
+            });
+        });
+        
+        function generateActionPlan() {
+            const selectedActions = document.querySelectorAll('.action-card.selected');
+            const feedback = document.getElementById('actionplan-feedback');
+            
+            if (selectedActions.length === 0) {
+                feedback.textContent = "Please select at least one action you're willing to take to break your filter bubbles. Even small steps can make a big difference!";
+                feedback.className = 'feedback';
+            } else {
+                let actionText = "Excellent! Your personalized action plan:\n\n";
+                const actionDetails = [];
+                
+                selectedActions.forEach((action, index) => {
+                    const actionType = action.getAttribute('data-action');
+                    actionText += `${index + 1}. ${action.querySelector('h3').textContent}\n`;
+                    
+                    // Add specific details based on action type
+                    switch(actionType) {
+                        case 'diverse-sources':
+                            actionDetails.push("Start by following one news source from a different political perspective than your usual sources.");
+                            break;
+                        case 'different-voices':
+                            actionDetails.push("Find and follow 2-3 people on social media who have different backgrounds or opinions than you.");
+                            break;
+                        case 'critical-thinking':
+                            actionDetails.push("Before liking or sharing content, ask yourself: 'Why do I agree with this? What might someone with a different view think?'");
+                            break;
+                        case 'algorithm-settings':
+                            actionDetails.push("Check the privacy settings on your favorite apps and turn off personalized ads and recommendations.");
+                            break;
+                        case 'offline-discussions':
+                            actionDetails.push("This week, have a conversation with someone who has different views on a topic you care about.");
+                            break;
+                        case 'media-literacy':
+                            actionDetails.push("Practice checking facts by looking at multiple sources before forming strong opinions.");
+                            break;
+                    }
+                });
+                
+                actionText += "\nSpecific steps to get started:\n";
+                actionDetails.forEach((detail, index) => {
+                    actionText += `• ${detail}\n`;
+                });
+                
+                actionText += "\nRemember: Breaking filter bubbles is an ongoing process. Start with small, manageable steps and gradually incorporate more diversity into your information diet. The key is consistency!";
+                
+                // Add motivational message based on number of actions selected
+                if (selectedActions.length === 1) {
+                    actionText += "\n\nGreat start! Once you feel comfortable with this first step, consider adding another action to your plan.";
+                } else if (selectedActions.length <= 3) {
+                    actionText += "\n\nGood selection! These actions will work well together to help you see beyond your current information bubble.";
+                } else {
+                    actionText += "\n\nAmbitious plan! You're taking significant steps toward breaking free from filter bubbles. Remember to pace yourself and focus on consistency.";
+                }
+                
+                feedback.textContent = actionText;
+                feedback.className = 'feedback positive';
+            }
+            
+            feedback.style.display = 'block';
+        }
+        
+        // Initialize activity 1 options on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Activity 1 options are now properly initialized
+            console.log('Activity 1 options initialized');
+        });
+    </script>
+</body>
+</html>
